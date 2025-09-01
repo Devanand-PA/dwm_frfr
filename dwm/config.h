@@ -1,5 +1,5 @@
 /* See LICENSE file for copyright and license details. */
-
+#include <X11/XF86keysym.h>
 /* appearance */
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
@@ -60,6 +60,8 @@ static const Layout layouts[] = {
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
 static const char *termcmd[]  = { "st", NULL };
+static const char *volumekeys[][8] = { {"sh","-c","amixer -q sset Master toggle ",NULL},{"sh","-c","amixer -q sset Master unmute && amixer -q sset 'Master' 2%+ ",NULL},{"sh","-c","amixer -q sset Master unmute && amixer -q sset 'Master' 2%- ",NULL}};
+//static const char *volumekeys[][8] = {{"pactl","set-sink-mute","3","toggle",NULL},{"pactl","set-sink-volume","3","+1%",NULL},{"pactl","set-sink-volume","3","-1%",NULL}};
 
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
@@ -79,6 +81,13 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
 	{ MODKEY,                       XK_Return, zoom,           {0} },
 	{ MODKEY,                       XK_Tab,    view,           {0} },
+	{ 0,		                XF86XK_AudioMute, 		spawn,        	{.v = volumekeys[0] } },
+	{ ShiftMask,	                XF86XK_AudioMute, 		spawn,        	{.v = (const char*[]){"vmscript",NULL} } },
+	{ 0,		                XF86XK_AudioPlay,				spawn,        	{.v = (const char*[]){"playerctl","play-pause",NULL} } },
+	{ 0,		                XF86XK_AudioPrev,				spawn,        	{.v = (const char*[]){"playerctl","previous",NULL} } },
+	{ 0,		                XF86XK_AudioNext,				spawn,        	{.v = (const char*[]){"playerctl","next",NULL} } },
+	{ 0,		                XF86XK_AudioRaiseVolume, 	spawn, 		{.v = volumekeys[1] } },
+	{ 0,		                XF86XK_AudioLowerVolume, 	spawn, 		{.v = volumekeys[2] } },
 	{ MODKEY,	                XK_q,      killclient,     {0} },
 	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
 	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
@@ -100,7 +109,8 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_7,                      6)
 	TAGKEYS(                        XK_8,                      7)
 	TAGKEYS(                        XK_9,                      8)
-	{ MODKEY|Mod1Mask,             XK_q,      quit,           {0} },
+	{ MODKEY|Mod1Mask,		XK_r,      quit,           {0} },
+	{ MODKEY|Mod1Mask,		XK_q, 		spawn,          SHCMD("pkill xinit") },
 	{ ShiftMask,			XK_Print, 		spawn,          SHCMD("scrot --select - | xclip -sel clip -t image/png") },
 };
 
