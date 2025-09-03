@@ -63,6 +63,7 @@ static const char *termcmd[]  = { "st", NULL };
 static const char *volumekeys[][8] = { {"sh","-c","amixer -q sset Master toggle ",NULL},{"sh","-c","amixer -q sset Master unmute && amixer -q sset 'Master' 2%+ ",NULL},{"sh","-c","amixer -q sset Master unmute && amixer -q sset 'Master' 2%- ",NULL}};
 //static const char *volumekeys[][8] = {{"pactl","set-sink-mute","3","toggle",NULL},{"pactl","set-sink-volume","3","+1%",NULL},{"pactl","set-sink-volume","3","-1%",NULL}};
 
+
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_space,      	spawn,          {.v = dmenucmd } },
@@ -112,7 +113,7 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_9,                      8)
 	{ MODKEY|Mod1Mask,		XK_r,      quit,           {0} },
 	{ MODKEY|Mod1Mask,		XK_q, 		spawn,          SHCMD("pkill xinit") },
-	{ ShiftMask,			XK_Print, 		spawn,          SHCMD("scrot --select - | xclip -sel clip -t image/png") },
+	#include "personal_keybinds.h"
 };
 
 /* button definitions */
