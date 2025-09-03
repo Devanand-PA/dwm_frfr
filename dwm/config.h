@@ -70,6 +70,7 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_b, 		spawn,          {.v = (static const char*[]) {"firefox","-P","Personal",NULL} } },
 	{ MODKEY,                       XK_p, 		spawn,          {.v = (static const char*[]) {"playsong","--shuffle=yes",NULL} } },
 	{ MODKEY,                       XK_o, 		spawn,          SHCMD(" sh -c \"$(cat ~/.common_commands | dmenu -l 30)\"") },
+	{ Mod1Mask,			XK_Tab, spawn,          {.v = (const char*[]){"rofi","-show","window",NULL} } },
 	{ MODKEY|ControlMask,                       XK_m, 		spawn,          {.v = (static const char*[]) {"firefox","-P","Mail",NULL} } },
 	{ MODKEY|Mod1Mask,                       XK_m, 		spawn,          {.v = (static const char*[]) {"firefox","-P","Manga",NULL} } },
 	{ MODKEY|ShiftMask,             XK_b,      	togglebar,      {0} },
