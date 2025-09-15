@@ -103,9 +103,11 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_7,                      6)
 	TAGKEYS(                        XK_8,                      7)
 	TAGKEYS(                        XK_9,                      8)
-	{ MODKEY|Mod1Mask,		XK_r,      quit,           {0} },
-	{ MODKEY|Mod1Mask,		XK_q, 		spawn,          SHCMD("pkill xinit") },
+	{ MODKEY|Mod1Mask,		XK_q,      quit,           {0} },
+	{ MODKEY|Mod1Mask,		XK_r,      quit,           {1} },
+	//{ MODKEY|Mod1Mask,		XK_q, 		spawn,          SHCMD("pkill xinit") },
 	#include "personal_keybinds.h"
+
 };
 
 /* button definitions */
