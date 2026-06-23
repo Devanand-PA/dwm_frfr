@@ -752,7 +752,7 @@ static void
 usage(void)
 {
 	die("usage: dmenu [-bfiv] [-l lines] [-p prompt] [-fn font] [-m monitor]\n"
-	    "             [-nb color] [-nf color] [-sb color] [-sf color] [-w windowid]");
+	    "             [-nb color] [-nf color] [-sb color] [-sf color] [-w windowid] [-it text]");
 }
 
 static int colors_initialized = 0;
@@ -843,6 +843,11 @@ main(int argc, char *argv[])
 			colors[SchemeOut][ColFg] = argv[++i];
 		else if (!strcmp(argv[i], "-w"))   /* embedding window id */
 			embed = argv[++i];
+		else if (!strcmp(argv[i], "-it")) {
+			/* embedding window id */
+			const char * text = argv[++i];
+			insert(text,strlen(text));
+		}
 		else
 			usage();
 
