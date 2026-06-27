@@ -29,7 +29,7 @@
 #define OPAQUE                0xffu
 
 /* enums */
-enum { SchemeNorm, SchemeSel, SchemeOut, SchemeLast }; /* color schemes */
+enum { SchemeNorm, SchemeSel, SchemeOut, SchemeNormAlt , SchemeLast }; /* color schemes */
 
 struct item {
 	char *text;
@@ -38,6 +38,7 @@ struct item {
 	int out;
 };
 static unsigned int border_width;
+int altNumber;
 static char text[BUFSIZ] = "";
 static char *embed;
 static int bh, mw, mh;
@@ -56,7 +57,7 @@ static XIC xic;
 
 static Drw *drw;
 static Clr *scheme[SchemeLast];
-
+static char altnormbg[2][8];
 static int useargb = 0;
 static Visual *visual;
 static int depth;
@@ -157,7 +158,10 @@ drawitem(struct item *item, int x, int y, int w)
 	else if (item->out)
 		drw_setscheme(drw, scheme[SchemeOut]);
 	else
+		if (altNumber%2)
 		drw_setscheme(drw, scheme[SchemeNorm]);
+		else
+		drw_setscheme(drw, scheme[SchemeNormAlt]);
 
 	return drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0);
 }
@@ -189,8 +193,12 @@ drawmenu(void)
 
 	if (lines > 0) {
 		/* draw vertical list */
+		altNumber = 0;
 		for (item = curr; item != next; item = item->right)
+		{
 			drawitem(item, x, y += bh, mw - x);
+			++altNumber;
+		}	
 	} else if (matches) {
 		/* draw horizontal list */
 		x += inputw;
@@ -200,8 +208,12 @@ drawmenu(void)
 			drw_text(drw, x, 0, w, bh, lrpad / 2, "<", 0);
 		}
 		x += w;
+		altNumber = 0;
 		for (item = curr; item != next; item = item->right)
+		{
 			x = drawitem(item, x, 0, textw_clamp(item->text, mw - x - TEXTW(">")));
+			++altNumber;
+		}
 		if (next) {
 			w = TEXTW(">");
 			drw_setscheme(drw, scheme[SchemeNorm]);
@@ -725,7 +737,7 @@ setup(void)
 	                    depth, CopyFromParent, visual,
 	                    CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWColormap | CWEventMask, &swa);
 	if (border_width)
-		XSetWindowBorder(dpy, win, scheme[SchemeSel][ColBg].pixel);
+		XSetWindowBorder(dpy, win, scheme[SchemeOut][0].pixel);
 	XSetClassHint(dpy,win,&ch);
 
 	/* input methods */
@@ -788,12 +800,26 @@ snprintf(walColorsPath, sizeof(walColorsPath), "%s/.cache/wal/colors", home);
             colors[SchemeNorm][0] = wal[7];
             colors[SchemeNorm][1] = wal[0];
 
-            colors[SchemeSel][0]  = wal[0];
+            colors[SchemeSel][0]  = wal[7];
             colors[SchemeSel][1]  = wal[1];
 
-            colors[SchemeOut][0]  = wal[7];
-            colors[SchemeOut][1]  = wal[1];
+            colors[SchemeOut][0]  = wal[5];
+            colors[SchemeOut][1]  = wal[4];
+		
         }
+	    int schemenorm_r , schemenorm_g , schemenorm_b ;
+	    sscanf(colors[SchemeNorm][1] + 1 , "%02x%02x%02x" , &schemenorm_r , &schemenorm_g , &schemenorm_b);
+	    schemenorm_r += 16;
+	    schemenorm_g += 16;
+	    schemenorm_b += 16;
+
+		// Declare a mutable buffer (e.g. at the top of your file or function)
+		static char schemenormalt_bg[8];
+		// Write into the mutable buffer
+		snprintf(schemenormalt_bg, sizeof(schemenormalt_bg), "#%02x%02x%02x", schemenorm_r, schemenorm_g, schemenorm_b);
+		// Point the colors entry to it
+		colors[SchemeNormAlt][1] = schemenormalt_bg;
+	    	colors[SchemeNormAlt][0]  = colors[SchemeNorm][0]  ;
     }
 
     colors_initialized = 1;
