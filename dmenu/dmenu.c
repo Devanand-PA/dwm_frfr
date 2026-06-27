@@ -57,7 +57,6 @@ static XIC xic;
 
 static Drw *drw;
 static Clr *scheme[SchemeLast];
-static char altnormbg[2][8];
 static int useargb = 0;
 static Visual *visual;
 static int depth;
@@ -807,7 +806,7 @@ snprintf(walColorsPath, sizeof(walColorsPath), "%s/.cache/wal/colors", home);
             colors[SchemeOut][1]  = wal[4];
 		
         }
-	    int schemenorm_r , schemenorm_g , schemenorm_b ;
+	    unsigned int schemenorm_r , schemenorm_g , schemenorm_b ;
 	    sscanf(colors[SchemeNorm][1] + 1 , "%02x%02x%02x" , &schemenorm_r , &schemenorm_g , &schemenorm_b);
 	    schemenorm_r += 16;
 	    schemenorm_g += 16;
