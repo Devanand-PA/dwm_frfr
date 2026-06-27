@@ -37,7 +37,7 @@ struct item {
 	struct item *left, *right;
 	int out;
 };
-
+static unsigned int border_width;
 static char text[BUFSIZ] = "";
 static char *embed;
 static int bh, mw, mh;
@@ -721,10 +721,12 @@ setup(void)
 	swa.border_pixel = 0;
 	swa.colormap = cmap;
 	swa.event_mask = ExposureMask | KeyPressMask | VisibilityChangeMask;
-	win = XCreateWindow(dpy, root, x, y, mw, mh, 0,
+	win = XCreateWindow(dpy, root, x, y, mw, mh, border_width,
 	                    depth, CopyFromParent, visual,
 	                    CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWColormap | CWEventMask, &swa);
-	XSetClassHint(dpy, win, &ch);
+	if (border_width)
+		XSetWindowBorder(dpy, win, scheme[SchemeSel][ColBg].pixel);
+	XSetClassHint(dpy,win,&ch);
 
 	/* input methods */
 	if ((xim = XOpenIM(dpy, NULL, NULL, NULL)) == NULL)
@@ -790,7 +792,7 @@ snprintf(walColorsPath, sizeof(walColorsPath), "%s/.cache/wal/colors", home);
             colors[SchemeSel][1]  = wal[1];
 
             colors[SchemeOut][0]  = wal[7];
-            colors[SchemeOut][1]  = wal[6];
+            colors[SchemeOut][1]  = wal[1];
         }
     }
 
