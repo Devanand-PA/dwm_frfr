@@ -799,7 +799,7 @@ snprintf(walColorsPath, sizeof(walColorsPath), "%s/.cache/wal/colors", home);
             colors[SchemeNorm][0] = wal[7];
             colors[SchemeNorm][1] = wal[0];
 
-            colors[SchemeSel][0]  = wal[7];
+            colors[SchemeSel][0]  = wal[0];
             colors[SchemeSel][1]  = wal[1];
 
             colors[SchemeOut][0]  = wal[5];
@@ -808,9 +808,9 @@ snprintf(walColorsPath, sizeof(walColorsPath), "%s/.cache/wal/colors", home);
         }
 	    unsigned int schemenorm_r , schemenorm_g , schemenorm_b ;
 	    sscanf(colors[SchemeNorm][1] + 1 , "%02x%02x%02x" , &schemenorm_r , &schemenorm_g , &schemenorm_b);
-	    schemenorm_r += 16;
-	    schemenorm_g += 16;
-	    schemenorm_b += 16;
+	    schemenorm_r += 24;
+	    schemenorm_g += 24;
+	    schemenorm_b += 24;
 
 		// Declare a mutable buffer (e.g. at the top of your file or function)
 		static char schemenormalt_bg[8];
