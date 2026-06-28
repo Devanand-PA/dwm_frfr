@@ -800,7 +800,7 @@ snprintf(walColorsPath, sizeof(walColorsPath), "%s/.cache/wal/colors", home);
             colors[SchemeNorm][1] = wal[0];
 
             colors[SchemeSel][0]  = wal[0];
-            colors[SchemeSel][1]  = wal[1];
+            colors[SchemeSel][1]  = wal[5];
 
             colors[SchemeOut][0]  = wal[5];
             colors[SchemeOut][1]  = wal[4];
