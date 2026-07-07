@@ -40,6 +40,7 @@
 #include <X11/extensions/Xinerama.h>
 #endif /* XINERAMA */
 #include <X11/Xft/Xft.h>
+#include <X11/extensions/XTest.h>
 
 #include "drw.h"
 #include "util.h"
@@ -289,40 +290,17 @@ dotool_movemouse(const Arg *arg) {
     XWarpPointer(dpy, None, None, 0, 0, 0, 0, mouse_x , mouse_y);
 }
 
+
 void
 dotool_clickmouse(const Arg *arg) {
-    Window root_ret, child_ret;
-    int root_x, root_y, win_x, win_y;
-    unsigned int mask;
-
-    // Find out exactly where the mouse is and what window is under it
-    XQueryPointer(dpy, root, &root_ret, &child_ret, &root_x, &root_y, &win_x, &win_y, &mask);
-
-    XButtonEvent event = {
-        .type = ButtonPress,
-        .display = dpy,
-        .window = child_ret ? child_ret : root_ret,
-        .root = root_ret,
-        .subwindow = None,
-        .time = CurrentTime,
-        .x = win_x,
-        .y = win_y,
-        .x_root = root_x,
-        .y_root = root_y,
-        .state = mask,
-        .button = arg->i, // 1 for left click, 3 for right click
-        .same_screen = True
-    };
-
-    // Send the mouse down event
-    XSendEvent(dpy, event.window, True, ButtonPressMask, (XEvent *)&event);
-    
-    // Send the mouse up event
-    event.type = ButtonRelease;
-    XSendEvent(dpy, event.window, True, ButtonReleaseMask, (XEvent *)&event);
-    
+    // XTestFakeButtonEvent simulates a physical hardware click.
+    // It automatically uses the exact current location of the cursor,
+    // completely bypassing window coordinate math.
+    XTestFakeButtonEvent(dpy, arg->i, True, CurrentTime);  // Mouse down
+    XTestFakeButtonEvent(dpy, arg->i, False, CurrentTime); // Mouse up
     XFlush(dpy);
 }
+
 //==================================================================
 
 #include "config.h"
