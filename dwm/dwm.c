@@ -271,6 +271,60 @@ static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
 
 /* configuration, allows nested code to access above variables */
+
+//=========================================
+// DELETE THIS PART IF YOU DON'T WANT TO MIMIC A MOUSE USING ARROW KEYS (the functions dotool_movemouse and dotool_clickmouse)
+// I NEED THESE BECAUSE MY LAPTOP'S TOUCHPAD STOPPED WORKING (AS WELL AS THE TRACKPOINT) BECAUSE OF SOME IRREGULAR VOLTAGE ISSUES CAUSED BY OUR ELECTRICITY SUPPLIER, SO NOW I HAVE TO USE ARROW KEYS INSTEAD FOR A CURSOR.
+//========================================
+void
+dotool_movemouse(const Arg *arg) {
+    int mouse_x = 0, mouse_y = 0;
+    // arg->i maps to: 0=Left, 1=Right, 2=Up, 3=Down
+    switch(arg->i) {
+        case 0: mouse_x = -10; break;
+        case 1: mouse_x = 10;  break;
+        case 2: mouse_y = -10; break;
+        case 3: mouse_y = 10;  break;
+    }
+    XWarpPointer(dpy, None, None, 0, 0, 0, 0, mouse_x , mouse_y);
+}
+
+void
+dotool_clickmouse(const Arg *arg) {
+    Window root_ret, child_ret;
+    int root_x, root_y, win_x, win_y;
+    unsigned int mask;
+
+    // Find out exactly where the mouse is and what window is under it
+    XQueryPointer(dpy, root, &root_ret, &child_ret, &root_x, &root_y, &win_x, &win_y, &mask);
+
+    XButtonEvent event = {
+        .type = ButtonPress,
+        .display = dpy,
+        .window = child_ret ? child_ret : root_ret,
+        .root = root_ret,
+        .subwindow = None,
+        .time = CurrentTime,
+        .x = win_x,
+        .y = win_y,
+        .x_root = root_x,
+        .y_root = root_y,
+        .state = mask,
+        .button = arg->i, // 1 for left click, 3 for right click
+        .same_screen = True
+    };
+
+    // Send the mouse down event
+    XSendEvent(dpy, event.window, True, ButtonPressMask, (XEvent *)&event);
+    
+    // Send the mouse up event
+    event.type = ButtonRelease;
+    XSendEvent(dpy, event.window, True, ButtonReleaseMask, (XEvent *)&event);
+    
+    XFlush(dpy);
+}
+//==================================================================
+
 #include "config.h"
 
 /* compile-time check if all tags fit into an unsigned int bit array. */
@@ -2170,6 +2224,8 @@ zoom(const Arg *arg)
 int
 main(int argc, char *argv[])
 {
+
+
 	if (argc == 2 && !strcmp("-v", argv[1]))
 		die("dwm-"VERSION);
 	else if (argc != 1)

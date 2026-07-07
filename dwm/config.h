@@ -28,6 +28,7 @@ static const Rule rules[] = {
 	 */
 	/* class      instance    title       tags mask     isfloating   monitor */
 	// { "Gimp",     NULL,       NULL,       0,            1,           -1 },
+{ "floating_tooltip",     NULL,       NULL,       0,            1,           -1 },
 	{ "Firefox",  NULL,       NULL,       1 << 8,       0,           -1 },
 };
 
@@ -71,7 +72,7 @@ static const Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_space,      	spawn,          {.v = dmenucmd } },
 	{ MODKEY,                       XK_x, 		spawn,          {.v = termcmd } },
-	{ MODKEY,                       XK_o, 		spawn,          SHCMD(" sh -c \"$(cat ~/.common_commands | dmenu -l 30)\"") },
+	{ MODKEY,                       XK_o, 		spawn,          SHCMD(" sh -c \"$(cat ~/.common_commands | dmenu -i -l 30)\"") },
 	{ Mod1Mask,			XK_Tab, spawn,          {.v = (const char*[]){"rofi","-show","window",NULL} } },
 	{ MODKEY|ShiftMask,             XK_b,      	togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
@@ -91,7 +92,7 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
 	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
 	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
-	{ MODKEY|ShiftMask,             XK_space,  setlayout,      {0} },
+	// { MODKEY|ShiftMask,             XK_space,  setlayout,      {0} },
 	{ MODKEY|ShiftMask,             XK_f,  togglefloating, {0} },
 	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
 	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
