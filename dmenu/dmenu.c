@@ -36,6 +36,7 @@ struct item {
 	unsigned int width;
 	struct item *left, *right;
 	int out;
+	int id; // for multiselect
 };
 static unsigned int border_width;
 int altNumber;
@@ -49,6 +50,9 @@ static struct item *items = NULL;
 static struct item *matches, *matchend;
 static struct item *prev, *curr, *next, *sel;
 static int mon = -1, screen;
+
+static int *selid = NULL;
+static unsigned int selidsize = 0;
 
 static Atom clip, utf8;
 static Display *dpy;
@@ -66,7 +70,25 @@ static Colormap cmap;
 
 static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
 static char *(*fstrstr)(const char *, const char *) = strstr;
+
+
+static int
+issel(size_t id) {
+	for (int i=0;i<selidsize;i++){
+		if (selid[i] == id) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
+
+
 static void xinitvisual(void);
+
+
+
 
 static unsigned int
 textw_clamp(const char *str, unsigned int n)
@@ -129,6 +151,7 @@ cleanup(void)
 	drw_free(drw);
 	XSync(dpy, False);
 	XCloseDisplay(dpy);
+	free(selid);
 }
 
 static char *
@@ -154,7 +177,7 @@ drawitem(struct item *item, int x, int y, int w)
 {
 	if (item == sel)
 		drw_setscheme(drw, scheme[SchemeSel]);
-	else if (item->out)
+	else if (issel(item->id))
 		drw_setscheme(drw, scheme[SchemeOut]);
 	else
 		if (altNumber%2)
@@ -416,6 +439,26 @@ keypress(XKeyEvent *ev)
 			goto draw;
 		case XK_Return:
 		case XK_KP_Enter:
+			if (sel && issel(sel->id)) {
+			for (int i=0;i < selidsize;i++) {
+				if (selid[i] == sel->id){
+					selid[i] = -1;
+				}
+			} }
+			
+			else {
+				for (int i = 0; i< selidsize;i++){
+					if (selid[i] == -1){
+						selid[i] = sel->id;
+						return;
+					}
+				}
+				selidsize++;
+				selid = realloc(selid, (selidsize +1) * sizeof(int));
+				selid[selidsize -1] = sel->id;
+			}
+
+
 			break;
 		case XK_bracketleft:
 			cleanup();
@@ -520,13 +563,28 @@ insert:
 		break;
 	case XK_Return:
 	case XK_KP_Enter:
-		puts((sel && !(ev->state & ShiftMask)) ? sel->text : text);
+		// puts((sel && !(ev->state & ShiftMask)) ? sel->text : text);
+		
+
 		if (!(ev->state & ControlMask)) {
+			for (int i=0;i<selidsize;i++) {
+				if (selid[i] != -1 && (!sel || sel->id != selid[i])){
+					puts(items[selid[i]].text);
+				}
+			}
+
+			if (sel && !(ev->state & ShiftMask)) {
+				puts(sel->text);
+			}
+			else {
+				puts(text);
+			}
+
 			cleanup();
 			exit(0);
 		}
-		if (sel)
-			sel->out = 1;
+		// if (sel)
+		// 	sel->out = 1;
 		break;
 	case XK_Right:
 	case XK_KP_Right:
@@ -596,7 +654,8 @@ readstdin(void)
 			die("strdup:");
 		items[i].width = TEXTW(line);
 
-		items[i].out = 0;
+		// items[i].out = 0;
+		items[i].id = i; // again, for multiselect
 	}
 	free(line);
 	if (items)
@@ -736,7 +795,7 @@ setup(void)
 	                    depth, CopyFromParent, visual,
 	                    CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWColormap | CWEventMask, &swa);
 	if (border_width)
-		XSetWindowBorder(dpy, win, scheme[SchemeOut][0].pixel);
+		XSetWindowBorder(dpy, win, scheme[SchemeSel][1].pixel);
 	XSetClassHint(dpy,win,&ch);
 
 	/* input methods */
@@ -802,7 +861,7 @@ snprintf(walColorsPath, sizeof(walColorsPath), "%s/.cache/wal/colors", home);
             colors[SchemeSel][0]  = wal[0];
             colors[SchemeSel][1]  = wal[5];
 
-            colors[SchemeOut][0]  = wal[5];
+            colors[SchemeOut][0]  = wal[0];
             colors[SchemeOut][1]  = wal[4];
 		
         }

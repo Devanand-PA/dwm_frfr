@@ -1,2 +1,5 @@
 #!/bin/sh
-dmenu_path | dmenu "$@" -i -l 30 | ${SHELL:-"/bin/sh"} &
+dmenu_path | dmenu "$@" -l 30 |
+    while read -r cmd; do
+        echo "$cmd" | xargs setsid -f # TODO: make it simpler (just `setsid -f "$cmd"` doesn't work in all cases)
+    done
