@@ -26,7 +26,7 @@ void  update_time() {
         time(&rawtime);
         localtime_r(&rawtime, &timeinfo);  // Thread-safe: writes to YOUR struct
         
-        strftime(time_buffer, sizeof(time_buffer), "%H:%M:%S", &timeinfo);
+        strftime(time_buffer, sizeof(time_buffer), "%H:%M", &timeinfo);
         strncat( full_buffer ,  time_buffer  ,   sizeof(full_buffer) - strnlen(full_buffer,sizeof(full_buffer)) -1 );
         
 }
@@ -64,7 +64,7 @@ int main(){
     strncat( full_buffer , " " ,sizeof(bat_buffer)-strnlen(bat_buffer,sizeof(bat_buffer)-1) );
     update_battery();
     set_xroot_name(full_buffer);
-    sleep(1);
+    sleep(30);
     }
 
 
