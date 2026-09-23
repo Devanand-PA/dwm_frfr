@@ -142,6 +142,39 @@ typedef struct {
 	int monitor;
 } Rule;
 
+/* ---------- restart state persistence ---------- */
+#define STATEFILE "/dev/shm/dwm_restart_state"
+
+typedef struct {
+	Window       win;
+	unsigned int tags;
+	int          isfloating;
+	int          x, y, w, h;
+	int          monidx;
+} SavedClient;
+
+typedef struct {
+	int          num;
+	unsigned int seltags;
+	unsigned int tagset[2];
+	float        mfact;
+	int          nmaster;
+	unsigned int sellt;
+	int          showbar;
+} SavedMonitor;
+
+static SavedClient  *saved_clients = NULL;
+static int           nsaved_clients = 0;
+static SavedMonitor *saved_mons    = NULL;
+static int           nsaved_mons    = 0;
+
+static void save_state(void);
+static void load_state(void);
+static void apply_saved_monitors(void);
+
+
+
+
 /* function declarations */
 static void reload_colors(void);
 static void sigusr1(int unused);
@@ -417,6 +450,93 @@ reload_colors(void)
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
 
 /* function implementations */
+static void
+save_state(void)
+{
+	FILE *fp;
+	Client *c;
+	Monitor *m;
+
+	if (!(fp = fopen(STATEFILE, "w")))
+		return;
+
+	for (m = mons; m; m = m->next) {
+		fprintf(fp, "M %d %u %u %u %f %d %u %d\n",
+			m->num, m->seltags, m->tagset[0], m->tagset[1],
+			m->mfact, m->nmaster, m->sellt, m->showbar);
+		for (c = m->clients; c; c = c->next)
+			fprintf(fp, "C %lu %u %d %d %d %d %d %d\n",
+				c->win, c->tags, c->isfloating,
+				c->x, c->y, c->w, c->h, m->num);
+	}
+	fclose(fp);
+}
+
+static void
+load_state(void)
+{
+	FILE *fp;
+	char type;
+
+	if (!(fp = fopen(STATEFILE, "r")))
+		return;
+
+	while (fscanf(fp, " %c", &type) == 1) {
+		if (type == 'M') {
+			SavedMonitor sm;
+			SavedMonitor *tmp;
+			if (fscanf(fp, "%d %u %u %u %f %d %u %d",
+				&sm.num, &sm.seltags, &sm.tagset[0], &sm.tagset[1],
+				&sm.mfact, &sm.nmaster, &sm.sellt, &sm.showbar) != 8)
+				break;
+			tmp = realloc(saved_mons, (nsaved_mons + 1) * sizeof(SavedMonitor));
+			if (!tmp) break;
+			saved_mons = tmp;
+			saved_mons[nsaved_mons++] = sm;
+		} else if (type == 'C') {
+			unsigned long win;
+			SavedClient sc;
+			SavedClient *tmp;
+			if (fscanf(fp, "%lu %u %d %d %d %d %d %d",
+				&win, &sc.tags, &sc.isfloating,
+				&sc.x, &sc.y, &sc.w, &sc.h, &sc.monidx) != 8)
+				break;
+			sc.win = (Window)win;
+			tmp = realloc(saved_clients, (nsaved_clients + 1) * sizeof(SavedClient));
+			if (!tmp) break;
+			saved_clients = tmp;
+			saved_clients[nsaved_clients++] = sc;
+		} else {
+			int ch;
+			while ((ch = fgetc(fp)) != '\n' && ch != EOF);
+		}
+	}
+	fclose(fp);
+	unlink(STATEFILE);   /* consumed; one-shot */
+}
+
+static void
+apply_saved_monitors(void)
+{
+	int i;
+	Monitor *m;
+
+	for (i = 0; i < nsaved_mons; i++) {
+		for (m = mons; m && m->num != saved_mons[i].num; m = m->next);
+		if (!m)
+			continue;
+		m->seltags      = saved_mons[i].seltags;
+		m->tagset[0]    = saved_mons[i].tagset[0];
+		m->tagset[1]    = saved_mons[i].tagset[1];
+		m->mfact        = saved_mons[i].mfact;
+		m->nmaster      = saved_mons[i].nmaster;
+		m->sellt        = saved_mons[i].sellt;
+		m->showbar      = saved_mons[i].showbar;
+		/* lt[] is unchanged in normal dwm use (only sellt toggles) */
+	}
+}
+
+
 void
 applyrules(Client *c)
 {
@@ -1202,6 +1322,25 @@ manage(Window w, XWindowAttributes *wa)
 	} else {
 		c->mon = selmon;
 		applyrules(c);
+	}
+	/* restore per-client state after a restart */
+	{
+		int si;
+		for (si = 0; si < nsaved_clients; si++) {
+			if (saved_clients[si].win == c->win) {
+				Monitor *sm;
+				c->tags       = saved_clients[si].tags;
+				c->isfloating = saved_clients[si].isfloating;
+				c->x = c->oldx = saved_clients[si].x;
+				c->y = c->oldy = saved_clients[si].y;
+				c->w = c->oldw = saved_clients[si].w;
+				c->h = c->oldh = saved_clients[si].h;
+				for (sm = mons; sm && sm->num != saved_clients[si].monidx; sm = sm->next);
+				if (sm)
+					c->mon = sm;
+				break;
+			}
+		}
 	}
 
 	if (c->x + WIDTH(c) > c->mon->wx + c->mon->ww)
@@ -2339,11 +2478,11 @@ zoom(const Arg *arg)
 	pop(c);
 }
 
+
 int
 main(int argc, char *argv[])
 {
 	init_colors();
-
 
 	if (argc == 2 && !strcmp("-v", argv[1]))
 		die("dwm-"VERSION);
@@ -2359,9 +2498,14 @@ main(int argc, char *argv[])
 	if (pledge("stdio rpath proc exec", NULL) == -1)
 		die("pledge");
 #endif /* __OpenBSD__ */
+	load_state();           /* <-- new */
+	apply_saved_monitors(); /* <-- new */
 	scan();
 	run();
-	if(restart) execvp(argv[0], argv);
+	if (restart) {
+		save_state();   /* <-- new: dump before the exec */
+		execvp(argv[0], argv);
+	}
 	cleanup();
 	XCloseDisplay(dpy);
 	return EXIT_SUCCESS;
