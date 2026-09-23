@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <X11/cursorfont.h>
@@ -142,6 +143,8 @@ typedef struct {
 } Rule;
 
 /* function declarations */
+static void reload_colors(void);
+static void sigusr1(int unused);
 static void applyrules(Client *c);
 static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact);
 static void arrange(Monitor *m);
@@ -270,6 +273,7 @@ static Display *dpy;
 static Drw *drw;
 static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
+static int sigpipe[2];
 
 /* configuration, allows nested code to access above variables */
 
@@ -304,6 +308,110 @@ dotool_clickmouse(const Arg *arg) {
 //==================================================================
 
 #include "config.h"
+
+static int colors_initialized = 0;
+
+static void
+init_colors(void)
+{
+	if (colors_initialized)
+		return;
+
+	const char *home = getenv("HOME");
+	if (!home) {
+		colors_initialized = 1;
+		return;
+	}
+
+	char path[512];
+	snprintf(path, sizeof path, "%s/.cache/wal/colors", home);
+
+	FILE *fp = fopen(path, "r");
+	if (!fp) {
+		colors_initialized = 1;
+		return;
+	}
+
+	static char wal[16][16];
+	char line[32];
+	int i = 0;
+
+	while (i < 16 && fgets(line, sizeof line, fp)) {
+		line[strcspn(line, "\n")] = '\0';
+		strncpy(wal[i], line, sizeof wal[i] - 1);
+		wal[i][sizeof wal[i] - 1] = '\0';
+		i++;
+	}
+	fclose(fp);
+
+	if (i >= 16) {
+		/* SchemeNorm: fg, bg, border */
+		colors[SchemeNorm][0] = wal[7];
+		colors[SchemeNorm][1] = wal[0];
+		colors[SchemeNorm][2] = wal[8];
+
+		/* SchemeSel: fg, bg, border */
+		colors[SchemeSel][0]  = wal[0];
+		colors[SchemeSel][1]  = wal[5];
+		colors[SchemeSel][2]  = wal[5];
+	}
+
+	colors_initialized = 1;
+}
+
+void
+sigusr1(int unused)
+{
+    write(sigpipe[1], "1", 1);
+}
+
+void
+reload_colors(void)
+{
+    const char *home = getenv("HOME");
+    if (!home)
+        return;
+
+    char path[512];
+    snprintf(path, sizeof path, "%s/.cache/wal/colors", home);
+
+    FILE *fp = fopen(path, "r");
+    if (!fp)
+        return;
+
+    static char wal[16][16];
+    char line[32];
+    int i = 0;
+
+    while (i < 16 && fgets(line, sizeof line, fp)) {
+        line[strcspn(line, "\n")] = '\0';
+        strncpy(wal[i], line, sizeof wal[i] - 1);
+        wal[i][sizeof wal[i] - 1] = '\0';
+        i++;
+    }
+    fclose(fp);
+
+    if (i >= 16) {
+        /* SchemeNorm: fg, bg, border */
+        colors[SchemeNorm][0] = wal[7];
+        colors[SchemeNorm][1] = wal[0];
+        colors[SchemeNorm][2] = wal[8];
+
+        /* SchemeSel: fg, bg, border */
+        colors[SchemeSel][0]  = wal[0];
+        colors[SchemeSel][1]  = wal[5];
+        colors[SchemeSel][2]  = wal[5];
+
+        /* Free old schemes and create new ones */
+        for (int j = 0; j < LENGTH(colors); j++) {
+            free(scheme[j]);
+            scheme[j] = drw_scm_create(drw, colors[j], 3);
+        }
+        drawbars();
+    }
+}
+
+
 
 /* compile-time check if all tags fit into an unsigned int bit array. */
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
@@ -505,6 +613,8 @@ checkotherwm(void)
 void
 cleanup(void)
 {
+	close(sigpipe[0]);
+	close(sigpipe[1]);
 	Arg a = {.ui = ~0};
 	Layout foo = { "", NULL };
 	Monitor *m;
@@ -1424,12 +1534,37 @@ restack(Monitor *m)
 void
 run(void)
 {
-	XEvent ev;
-	/* main event loop */
-	XSync(dpy, False);
-	while (running && !XNextEvent(dpy, &ev))
-		if (handler[ev.type])
-			handler[ev.type](&ev); /* call handler */
+    XEvent ev;
+    fd_set fds;
+    int xfd = ConnectionNumber(dpy);
+    int maxfd = xfd > sigpipe[0] ? xfd : sigpipe[0];
+    char buf[1];
+
+    XSync(dpy, False);
+    while (running) {
+        FD_ZERO(&fds);
+        FD_SET(xfd, &fds);
+        FD_SET(sigpipe[0], &fds);
+        if (select(maxfd + 1, &fds, NULL, NULL, NULL) == -1) {
+            if (errno == EINTR)
+                continue;
+            die("select failed");
+        }
+        if (FD_ISSET(sigpipe[0], &fds)) {
+            if (read(sigpipe[0], buf, sizeof buf) > 0) {
+                if (buf[0] == '1') {
+                    reload_colors();
+                }
+            }
+        }
+        if (FD_ISSET(xfd, &fds)) {
+            while (XPending(dpy)) {
+                XNextEvent(dpy, &ev);
+                if (handler[ev.type])
+                    handler[ev.type](&ev);
+            }
+        }
+    }
 }
 
 void
@@ -1597,6 +1732,11 @@ setup(void)
 
 	signal(SIGHUP, sighup);
 	signal(SIGTERM, sigterm);
+	if (pipe(sigpipe) == -1)
+	    die("pipe failed");
+	fcntl(sigpipe[0], F_SETFL, O_NONBLOCK);
+	fcntl(sigpipe[1], F_SETFL, O_NONBLOCK);
+	signal(SIGUSR1, sigusr1);
 
 	/* init screen */
 	screen = DefaultScreen(dpy);
@@ -2202,6 +2342,7 @@ zoom(const Arg *arg)
 int
 main(int argc, char *argv[])
 {
+	init_colors();
 
 
 	if (argc == 2 && !strcmp("-v", argv[1]))

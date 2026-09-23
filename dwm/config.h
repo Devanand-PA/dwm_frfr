@@ -1,4 +1,6 @@
+// dwm - config.h
 /* See LICENSE file for copyright and license details. */
+
 #include <X11/XF86keysym.h>
 /* appearance */
 static const unsigned int borderpx  = 0;        /* border pixel of windows */

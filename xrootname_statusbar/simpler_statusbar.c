@@ -26,7 +26,7 @@ void  update_time() {
         time(&rawtime);
         localtime_r(&rawtime, &timeinfo);  // Thread-safe: writes to YOUR struct
         
-        strftime(time_buffer, sizeof(time_buffer), "%H:%M", &timeinfo);
+        strftime(time_buffer, sizeof(time_buffer), "%a %d %b %I:%M %p", &timeinfo);
         strncat( full_buffer ,  time_buffer  ,   sizeof(full_buffer) - strnlen(full_buffer,sizeof(full_buffer)) -1 );
         
 }
