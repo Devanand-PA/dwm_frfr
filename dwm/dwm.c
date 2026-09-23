@@ -1323,7 +1323,7 @@ manage(Window w, XWindowAttributes *wa)
 		c->mon = selmon;
 		applyrules(c);
 	}
-	/* restore per-client state after a restart */
+	/* restore per-client state after a restart (consume the entry) */
 	{
 		int si;
 		for (si = 0; si < nsaved_clients; si++) {
@@ -1338,10 +1338,14 @@ manage(Window w, XWindowAttributes *wa)
 				for (sm = mons; sm && sm->num != saved_clients[si].monidx; sm = sm->next);
 				if (sm)
 					c->mon = sm;
+
+				/* remove this entry so it can't match a future window */
+				saved_clients[si] = saved_clients[--nsaved_clients];
 				break;
 			}
 		}
 	}
+
 
 	if (c->x + WIDTH(c) > c->mon->wx + c->mon->ww)
 		c->x = c->mon->wx + c->mon->ww - WIDTH(c);
@@ -2498,14 +2502,21 @@ main(int argc, char *argv[])
 	if (pledge("stdio rpath proc exec", NULL) == -1)
 		die("pledge");
 #endif /* __OpenBSD__ */
-	load_state();           /* <-- new */
-	apply_saved_monitors(); /* <-- new */
+	load_state();
+	apply_saved_monitors();
 	scan();
+
+	/* saved state is only meaningful for the initial scan */
+	free(saved_clients);  saved_clients  = NULL;  nsaved_clients = 0;
+	free(saved_mons);     saved_mons     = NULL;  nsaved_mons    = 0;
+
 	run();
 	if (restart) {
-		save_state();   /* <-- new: dump before the exec */
+		save_state();
 		execvp(argv[0], argv);
 	}
+
+
 	cleanup();
 	XCloseDisplay(dpy);
 	return EXIT_SUCCESS;
