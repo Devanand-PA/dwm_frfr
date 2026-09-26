@@ -14,7 +14,7 @@
 	{ Mod4Mask,			XK_r, spawn,          {.v = (const char*[]){"alacritty","-e","pickup","-l",NULL} } },
 	{ Mod4Mask,			XK_z, spawn,          {.v = (const char*[]){"alacritty","-e","bash","--init-file","~/envs/bash/bigtower.bash",NULL} } },
 	{ Mod4Mask,			XK_s, spawn,          {.v = (const char*[]){"vscrot","-I",NULL} } },
-	{ 0,				XK_Print, 	spawn,          {.v = (const char*[]){"screenshot",NULL} } },
+	{ 0,				XK_Print, 	spawn,          {.v = (const char*[]){"screenshot","-f",NULL} } },
 	{ Mod4Mask,				XK_Print, 	spawn,          {.v = (const char*[]){"screenshot","-s",NULL} } },
 	{ Mod4Mask|ShiftMask,			XK_w, spawn,          SHCMD("themesettler change-background && kill -USR1 $(pidof dwm)") },
 	{ Mod4Mask,			XK_w, spawn,          		SHCMD("themesettler select-background && kill -USR1 $(pidof dwm)") },
