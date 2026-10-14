@@ -1502,32 +1502,61 @@ movemouse(const Arg *arg)
 }
 
 
+
 void
 nametag(const Arg *arg) {
 	char *p, name[MAX_TAGLEN];
 	FILE *f;
 	int i;
+	char escaped[MAX_TAGLEN * 4 + 1];
+	char cmd[512];
+	size_t j, k;
 
-	errno = 0; // popen(3p) says on failure it "may" set errno
-	if(!(f = popen("dmenu < /dev/null", "r"))) {
-		fprintf(stderr, "dwm: popen 'dmenu < /dev/null' failed%s%s\n", errno ? ": " : "", errno ? strerror(errno) : "");
+	/* Find the first selected tag */
+	for (i = 0; i < LENGTH(tags); i++)
+		if (selmon->tagset[selmon->seltags] & (1 << i))
+			break;
+	if (i == LENGTH(tags))
+		return;  /* no tag selected, shouldn't happen */
+
+	/* Escape single quotes for safe shell interpolation */
+	for (j = 0, k = 0; tags[i][j] && k < sizeof(escaped) - 1; j++) {
+		if (tags[i][j] == '\'') {
+			if (k + 4 >= sizeof(escaped))
+				break;
+			escaped[k++] = '\'';
+			escaped[k++] = '\\';
+			escaped[k++] = '\'';
+			escaped[k++] = '\'';
+		} else {
+			escaped[k++] = tags[i][j];
+		}
+	}
+	escaped[k] = '\0';
+
+	/* Build command: pipe the current name into dmenu */
+	snprintf(cmd, sizeof(cmd), "printf '%%s' '%s' | dmenu", escaped);
+
+	errno = 0;  /* popen(3p) says on failure it "may" set errno */
+	if (!(f = popen(cmd, "r"))) {
+		fprintf(stderr, "dwm: popen '%s' failed%s%s\n", cmd,
+		        errno ? ": " : "", errno ? strerror(errno) : "");
 		return;
 	}
 	if (!(p = fgets(name, MAX_TAGLEN, f)) && (i = errno) && ferror(f))
 		fprintf(stderr, "dwm: fgets failed: %s\n", strerror(i));
 	if (pclose(f) < 0)
 		fprintf(stderr, "dwm: pclose failed: %s\n", strerror(errno));
-	if(!p)
+	if (!p)
 		return;
-	if((p = strchr(name, '\n')))
+	if ((p = strchr(name, '\n')))
 		*p = '\0';
 
-	for(i = 0; i < LENGTH(tags); i++)
-		if(selmon->tagset[selmon->seltags] & (1 << i))
+	for (i = 0; i < LENGTH(tags); i++)
+		if (selmon->tagset[selmon->seltags] & (1 << i))
 			strcpy(tags[i], name);
 	drawbars();
 }
-
 
 
 Client *
