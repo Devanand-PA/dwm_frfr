@@ -6,6 +6,7 @@ A rewrite of my dwm config because the wm_setup is all over the palce and I don'
 - focusonnetactive (for alt-tabbing)
 - dwm-restartsig (For restarting the WM during config changes)
 - nametag
+- dwm-underlinetags
 
 ### Custom patches
 - dwm remembers window positions and tags on restart
