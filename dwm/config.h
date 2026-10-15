@@ -22,7 +22,7 @@ static const char *colors[][3]      = {
 
 /* tagging */
 // static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
-#define MAX_TAGLEN 16
+#define MAX_TAGLEN 32
 static char tags[][MAX_TAGLEN] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
 static const unsigned int ulinepad		= 5;	/* horizontal padding between the underline and tag */
