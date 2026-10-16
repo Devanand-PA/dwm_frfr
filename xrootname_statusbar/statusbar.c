@@ -124,7 +124,7 @@ int battery_functions() {
 
     // Battery icon construction with bounds checking
     static const char *BAT_ARRAY[] = {"🟥","🟥","🟧","🟨","🟩","🟩","🟩","🟩","🟩","🟩"};
-    char temp_icon[100] = "[";
+    char temp_icon[100] = "";
     size_t current_len = 1;  // Starts with '['
     size_t max_len = sizeof(temp_icon) - 1;
 
@@ -134,23 +134,23 @@ int battery_functions() {
 
     // Add filled blocks
     printf("bat10 is ,%d\n",bat_10);
-    for (int i = 0; i <= bat_10; i++) {
-        const char *block = BAT_ARRAY[bat_10];
-        size_t block_len = strlen(block);
-        
-        if (current_len + block_len > max_len) break;
-       strncat(temp_icon, block, max_len - current_len);
-        current_len += block_len;
-    }
-
-    // Add empty blocks
-    const char *empty_block = "🔳";
-    size_t empty_len = strlen(empty_block);
-    for (int i = bat_10 + 1; i < 10; i++) {
-        if (current_len + empty_len > max_len) break;
-        strncat(temp_icon, empty_block, max_len - current_len);
-        current_len += empty_len;
-    }
+    // for (int i = 0; i <= bat_10; i++) {
+    //     const char *block = BAT_ARRAY[bat_10];
+    //     size_t block_len = strlen(block);
+    //
+    //     if (current_len + block_len > max_len) break;
+    //    strncat(temp_icon, block, max_len - current_len);
+    //     current_len += block_len;
+    // }
+    //
+    // // Add empty blocks
+    // const char *empty_block = "🔳";
+    // size_t empty_len = strlen(empty_block);
+    // for (int i = bat_10 + 1; i < 10; i++) {
+    //     if (current_len + empty_len > max_len) break;
+    //     strncat(temp_icon, empty_block, max_len - current_len);
+    //     current_len += empty_len;
+    // }
 
     // Add status icon
     // const char *status_icon = (strcmp(charging_status, "Charging") == 0) ? "⚡" : "⏬";
@@ -165,7 +165,7 @@ int battery_functions() {
     size_t status_len = strlen(status_icon);
     
     if (current_len + 1 + status_len <= max_len) {  // +1 for ']'
-        strncat(temp_icon, "]", max_len - current_len);
+        // strncat(temp_icon, "]", max_len - current_len);
         strncat(temp_icon, status_icon, max_len - current_len - 1);
     }
 
@@ -185,7 +185,7 @@ int update_titlebar() {
 
     // Build status string
     snprintf(set_to_bar, sizeof(set_to_bar), 
-             "%s |BAT %s[%d]%%", time_buffer, bat_icon, battery_percentage);
+             "%s %s[%d]%%", time_buffer, bat_icon, battery_percentage);
 
     // Update X11 root window
     if (!display) {
