@@ -7,6 +7,7 @@ A rewrite of my dwm config because the wm_setup is all over the palce and I don'
 - dwm-restartsig (For restarting the WM during config changes)
 - nametag
 - dwm-underlinetags
+- pertag
 
 ### Custom patches
 - dwm remembers window positions and tags on restart
