@@ -2543,7 +2543,6 @@ view(const Arg *arg)
 		togglebar(NULL);
 
 
-		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
 	focus(NULL);
 	arrange(selmon);
 }
